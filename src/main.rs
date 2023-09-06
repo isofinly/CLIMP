@@ -1,4 +1,4 @@
-use clap::{arg, command, value_parser, ArgAction, Command};
+use clap::{arg, command, value_parser, ArgAction, ArgMatches, Command};
 // use dialoguer::{theme::ColorfulTheme, Select};
 use image::imageops;
 use image::io::Reader as ImageReader;
@@ -10,7 +10,7 @@ use std::time::Duration;
 
 type Image = ImageBuffer<Rgba<u8>, Vec<u8>>;
 struct Args {
-    filename: PathBuf,
+    filepath: PathBuf,
     radius: Option<u32>,
     pixel: Option<u32>,
     resize: Option<u32>,
@@ -23,7 +23,7 @@ impl Args {
         let output_name = self
             .output
             .as_ref()
-            .unwrap_or(&self.filename)
+            .unwrap_or(&self.filepath)
             .with_extension(self.file_ext.as_deref().unwrap_or("jpg"));
         output_name
     }
@@ -90,27 +90,20 @@ fn blur(img: &Image, radius: u32) -> Image {
     );
     pb.set_message("\x1b[33mBlurring...\x1b[0m");
     let img = imageops::blur(img, radius as f32);
-    pb.finish_with_message("\x1b[32mDone:\x1b[0m");
+    pb.finish_with_message("\x1b[32mDone\x1b[0m");
     img
 }
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut args = Args {
-        filename: PathBuf::from(""),
-        radius: None,
-        pixel: None,
-        output: None,
-        resize: None,
-        file_ext: None,
-    };
+
+fn make_commands() -> ArgMatches {
     let matches = command!() // requires `cargo` feature
         .arg(
-            arg!([filename] "File path")
+            arg!([filepath] "File path")
                 .required(true)
                 .value_parser(value_parser!(PathBuf)),
         )
         .arg(
             arg!(
-                -o --output <FILENAME> "Output filename"
+                -o --output <filepath> "Output filepath"
             )
             .value_parser(value_parser!(PathBuf))
             .action(ArgAction::Set),
@@ -152,79 +145,151 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ),
         )
         .get_matches();
+    matches
+}
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut args = Args {
+        filepath: PathBuf::from(""),
+        radius: None,
+        pixel: None,
+        output: None,
+        resize: None,
+        file_ext: None,
+    };
 
-    if let Some(path) = matches.get_one::<PathBuf>("filename") {
-        args.filename = path.clone();
-        let file_ext_name = path
-            .clone()
-            .to_str()
-            .unwrap()
-            .to_string()
-            .split(".")
-            .last()
-            .unwrap()
+    let matches = make_commands();
+
+    if let Some(path) = matches.get_one::<PathBuf>("filepath") {
+        let file_ext_name = std::path::Path::new(&path)
+            .extension()
+            .and_then(std::ffi::OsStr::to_str)
+            .unwrap_or("jpg")
             .to_string();
-        args.file_ext = Some(".".to_string() + &file_ext_name);
+        args.filepath = path.clone();
+        args.file_ext = Some(/*".".to_string() + */ file_ext_name);
     }
 
     if let Some(name) = matches.get_one::<PathBuf>("output") {
         args.output = Some(name.clone());
     } else {
+        let filename = args
+            .filepath
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
+            + "_edited";
         args.output = Some(
-            matches
-                .get_one::<PathBuf>("filename")
+            args.filepath
+                .parent()
                 .unwrap()
-                .to_path_buf(),
+                .join(filename)
+                .with_extension(args.file_ext.as_deref().unwrap_or("jpg")),
         );
     }
 
-    if let Some(matches) = matches.subcommand_matches("blur") {
-        if let Some(r) = matches.get_one::<u32>("blur_radius") {
-            args.radius = Some(r.clone());
-            let img_result = blur(
-                &ImageReader::open(args.filename.clone())?
+    match matches.subcommand() {
+        Some(("blur", sub_matches)) => {
+            if let Some(r) = sub_matches.get_one::<u32>("blur_radius") {
+                args.radius = Some(r.clone());
+                let img_result = blur(
+                    &ImageReader::open(args.filepath.clone())?
+                        .decode()?
+                        .into_rgba8(),
+                    *r,
+                );
+                let _ = img_result.save(args.format_output_name());
+            }
+        }
+        Some(("pixelate", sub_matches)) => {
+            let img = ImageReader::open(args.filepath.clone())?.decode()?;
+            if let Some(s) = sub_matches.get_one::<u32>("pixel_size") {
+                args.pixel = Some(s.clone());
+                let img_result = pixelate(&img, (*s, *s));
+                let _ = img_result.save(args.format_output_name());
+            }
+        }
+        Some(("scale", sub_matches)) => {
+            let img = ImageReader::open(args.filepath.clone())?.decode()?;
+            if let Some(s) = sub_matches.get_one::<u32>("scale") {
+                args.resize = Some(s.clone());
+                let img_result = resize(&img.into_rgba8(), (*s, *s));
+                let _ = img_result.save(args.format_output_name());
+            }
+        }
+        Some(("rotate", _sub_matches)) => {
+            let img_result = rotate(
+                &ImageReader::open(args.filepath.clone())?
                     .decode()?
                     .into_rgba8(),
-                *r,
             );
             let _ = img_result.save(args.format_output_name());
         }
-    }
-
-    if let Some(matches) = matches.subcommand_matches("pixelate") {
-        let img = ImageReader::open(args.filename.clone())?.decode()?;
-        if let Some(s) = matches.get_one::<u32>("pixel_size") {
-            args.pixel = Some(s.clone());
-            let img_result = pixelate(&img, (*s, *s));
+        Some(("mirror", _sub_matches)) => {
+            let img = ImageReader::open(args.filepath.clone())?.decode()?;
+            let img_result = img.fliph();
             let _ = img_result.save(args.format_output_name());
         }
-    }
-
-    if let Some(matches) = matches.subcommand_matches("scale") {
-        let img = ImageReader::open(args.filename.clone())?.decode()?;
-        if let Some(s) = matches.get_one::<u32>("scale") {
-            args.resize = Some(s.clone());
-            let img_result = resize(&img.into_rgba8(), (*s, *s));
+        Some(("flip_vertical", _sub_matches)) => {
+            let img = ImageReader::open(args.filepath.clone())?.decode()?;
+            let img_result = img.flipv();
             let _ = img_result.save(args.format_output_name());
         }
+        _ => println!("Unindentified subcommand."),
     }
 
-    if let Some(matches) = matches.subcommand_matches("rotate"){
-        let img_result = rotate(&ImageReader::open(args.filename.clone())?.decode()?.into_rgba8());
-        let _ = img_result.save(args.format_output_name());
-    }
+    // if let Some(matches) = matches.subcommand_matches("blur") {
+    //     if let Some(r) = matches.get_one::<u32>("blur_radius") {
+    //         args.radius = Some(r.clone());
+    //         let img_result = blur(
+    //             &ImageReader::open(args.filepath.clone())?
+    //                 .decode()?
+    //                 .into_rgba8(),
+    //             *r,
+    //         );
+    //         let _ = img_result.save(args.format_output_name());
+    //     }
+    // }
 
-    if let Some(matches) = matches.subcommand_matches("mirror") {
-        let img = ImageReader::open(args.filename.clone())?.decode()?;
-        let img_result = img.fliph();
-        let _ = img_result.save(args.format_output_name());
-    }
+    // if let Some(matches) = matches.subcommand_matches("pixelate") {
+    //     let img = ImageReader::open(args.filepath.clone())?.decode()?;
+    //     if let Some(s) = matches.get_one::<u32>("pixel_size") {
+    //         args.pixel = Some(s.clone());
+    //         let img_result = pixelate(&img, (*s, *s));
+    //         let _ = img_result.save(args.format_output_name());
+    //     }
+    // }
 
-    if let Some(matches) = matches.subcommand_matches("flip_vertical") {
-        let img = ImageReader::open(args.filename.clone())?.decode()?;
-        let img_result = img.flipv();
-        let _ = img_result.save(args.format_output_name());
-    }
+    // if let Some(matches) = matches.subcommand_matches("scale") {
+    //     let img = ImageReader::open(args.filepath.clone())?.decode()?;
+    //     if let Some(s) = matches.get_one::<u32>("scale") {
+    //         args.resize = Some(s.clone());
+    //         let img_result = resize(&img.into_rgba8(), (*s, *s));
+    //         let _ = img_result.save(args.format_output_name());
+    //     }
+    // }
+
+    // if let Some(matches) = matches.subcommand_matches("rotate") {
+    //     let img_result = rotate(
+    //         &ImageReader::open(args.filepath.clone())?
+    //             .decode()?
+    //             .into_rgba8(),
+    //     );
+    //     let _ = img_result.save(args.format_output_name());
+    // }
+
+    // if let Some(matches) = matches.subcommand_matches("mirror") {
+    //     let img = ImageReader::open(args.filepath.clone())?.decode()?;
+    //     let img_result = img.fliph();
+    //     let _ = img_result.save(args.format_output_name());
+    // }
+
+    // if let Some(matches) = matches.subcommand_matches("flip_vertical") {
+    //     let img = ImageReader::open(args.filepath.clone())?.decode()?;
+    //     let img_result = img.flipv();
+    //     let _ = img_result.save(args.format_output_name());
+    // }
 
     Ok(())
 }
