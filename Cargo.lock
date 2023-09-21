@@ -195,11 +195,13 @@ checksum = "cd7cc57abe963c6d3b9d8be5b06ba7c8957a930305ca90304f24ef040aa6f961"
 name = "cli-image-processor"
 version = "0.1.0"
 dependencies = [
+ "ansi_term",
  "clap 4.4.2",
  "dialoguer",
  "dotenv",
  "image",
  "indicatif",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -891,6 +893,12 @@ name = "unicode-ident"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "301abaae475aa91687eb82514b328ab47a211a533026cb25fc3e519b86adfc3c"
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dd624098567895118886609431a7c3b8f516e41d30e0643f03d94592a147e36"
 
 [[package]]
 name = "unicode-width"

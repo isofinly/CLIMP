@@ -11,3 +11,5 @@ clap = { version = "4.3.19", features = ["derive", "wrap_help", "unstable-doc"] 
 dialoguer = "0.10.4"
 indicatif = "0.17.5"
 dotenv = {version = "0.15.0", features = ["clap"]}
+ansi_term = "0.12.1"
+unicode-segmentation = "1.10.1"
