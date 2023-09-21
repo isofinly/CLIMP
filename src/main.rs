@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let matches = make_commands();
 
-    Args::match_flags(args, matches).err();
+    let _ = Args::match_flags(args, matches);
 
     Ok(())
 }

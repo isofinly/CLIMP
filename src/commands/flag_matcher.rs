@@ -1,9 +1,9 @@
-use std::path::PathBuf;
 use crate::ascii;
 use clap::ArgMatches;
 use image::io::Reader as ImageReader;
 use std::error::Error;
 use std::io;
+use std::path::PathBuf;
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::{blur, pixelate, resize, rotate, Args};
@@ -17,12 +17,12 @@ impl Args {
                 .and_then(std::ffi::OsStr::to_str)
                 .unwrap_or("jpg")
                 .to_string();
-            args.filepath = path.clone();
-            args.file_ext = Some(/*".".to_string() + */ file_ext_name);
+            args.filepath = PathBuf::from(path);
+            args.file_ext = Some(file_ext_name.clone());
         }
 
         if let Some(name) = matches.get_one::<PathBuf>("output") {
-            args.output = Some(name.clone());
+            args.output = Some(PathBuf::from(name));
         } else {
             let filename = args
                 .filepath
@@ -32,6 +32,7 @@ impl Args {
                 .unwrap()
                 .to_string()
                 + "_edited";
+            // TODO: Fix only jpg output. Should be related to args.file_ext below
             args.output = Some(
                 args.filepath
                     .parent()
@@ -41,38 +42,41 @@ impl Args {
             );
         }
 
-        if matches
-            .subcommand_matches("ascii")
-            .unwrap()
-            .get_flag("colored")
+        if matches.subcommand_matches("ascii").is_some()
+            && matches
+                .subcommand_matches("ascii")
+                .unwrap()
+                .get_flag("colored")
         {
             args.colored = true
         };
-        if matches
-            .subcommand_matches("ascii")
-            .unwrap()
-            .get_flag("invert")
+        if matches.subcommand_matches("ascii").is_some()
+            && matches
+                .subcommand_matches("ascii")
+                .unwrap()
+                .get_flag("invert")
         {
             args.invert = true
         };
         if let Some(name) = matches
             .subcommand_matches("ascii")
-            .unwrap()
-            .get_one::<String>("charset")
+            .and_then(|m| m.get_one::<String>("charset"))
         {
             args.charset = name.to_string()
-        };
+        }
         if let Some(name) = matches
             .subcommand_matches("ascii")
-            .unwrap()
-            .get_one::<u32>("width")
+            .and_then(|m| m.get_one::<u32>("width"))
+        // .unwrap()
+        // .get_one::<u32>("width")
         {
             args.width = Some(*name as u32)
         };
         if let Some(name) = matches
             .subcommand_matches("ascii")
-            .unwrap()
-            .get_one::<u32>("height")
+            .and_then(|m| m.get_one::<u32>("height"))
+        // .unwrap()
+        // .get_one::<u32>("height")
         {
             args.height = Some(*name as u32)
         };
