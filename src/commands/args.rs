@@ -12,6 +12,7 @@ pub struct Args {
     pub colored: bool,
     pub invert: bool,
     pub charset: String,
+    pub threshold: Option<f32>,
 }
 
 impl Args {

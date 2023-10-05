@@ -59,3 +59,49 @@ pub fn blur(img: &Image, radius: u32) -> Image {
     pb.finish_with_message("\x1b[32mDone\x1b[0m");
     img
 }
+
+pub fn monochrome_ugly(img: &Image, threshold: f32) -> Image {
+    let (width, height) = img.dimensions();
+    let mut img_buf = ImageBuffer::new(width, height);
+
+    for (x, y, pixel) in img.enumerate_pixels() {
+        let red = pixel[0] as f32;
+        let green = pixel[1] as f32;
+        let blue = pixel[2] as f32;
+
+        let luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+
+        let threshold = threshold;
+        let new_pixel = if luminance >= threshold {
+            Rgba([255, 255, 255, 255])
+        } else {
+            Rgba([0, 0, 0, 255])
+        };
+
+        img_buf.put_pixel(x, y, new_pixel);
+    }
+    img_buf
+}
+
+pub fn grayscale(img: &Image) -> Image {
+    let (width, height) = img.dimensions();
+    let mut img_buf = ImageBuffer::new(width, height);
+
+    for (x, y, pixel) in img.enumerate_pixels() {
+        
+        let red = pixel[0] as f32;
+        let green = pixel[1] as f32;
+        let blue = pixel[2] as f32;
+
+        let grayscale_value = ((red + green + blue) / 3.0) as u8;
+
+        let grayscale_pixel = Rgba([grayscale_value, grayscale_value, grayscale_value, 255]);
+
+        img_buf.put_pixel(x, y, grayscale_pixel);
+    }
+    img_buf
+}
+
+// pub fn extract_qr(img: &Image) -> Option<String> {
+//     todo!()
+// }

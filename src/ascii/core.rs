@@ -1,5 +1,5 @@
 use super::image_renderer::ImageRenderer;
-pub use super::renderer::RenderOptions;
+use super::renderer::RenderOptions;
 use super::renderer::Renderer;
 use image::DynamicImage;
 use std::{io, path::Path};

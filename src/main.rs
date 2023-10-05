@@ -25,6 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         colored: false,
         invert: false,
         charset: "default".to_string(),
+        threshold: None,
     };
 
     let matches = make_commands();

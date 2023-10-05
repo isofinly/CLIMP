@@ -6,7 +6,7 @@ use std::io;
 use std::path::PathBuf;
 use unicode_segmentation::UnicodeSegmentation;
 
-use super::{blur, pixelate, resize, rotate, Args};
+use super::{blur, grayscale, monochrome_ugly, pixelate, resize, rotate, Args};
 use ascii::{from_str, render, RenderOptions};
 
 impl Args {
@@ -23,6 +23,15 @@ impl Args {
 
         if let Some(name) = matches.get_one::<PathBuf>("output") {
             args.output = Some(PathBuf::from(name));
+            args.file_ext = Some(String::from(
+                args.output
+                    .clone()
+                    .unwrap()
+                    .extension()
+                    .unwrap()
+                    .to_str()
+                    .unwrap(),
+            ));
         } else {
             let filename = args
                 .filepath
@@ -32,7 +41,7 @@ impl Args {
                 .unwrap()
                 .to_string()
                 + "_edited";
-            // TODO: Fix only jpg output. Should be related to args.file_ext below
+
             args.output = Some(
                 args.filepath
                     .parent()
@@ -67,16 +76,12 @@ impl Args {
         if let Some(name) = matches
             .subcommand_matches("ascii")
             .and_then(|m| m.get_one::<u32>("width"))
-        // .unwrap()
-        // .get_one::<u32>("width")
         {
             args.width = Some(*name as u32)
         };
         if let Some(name) = matches
             .subcommand_matches("ascii")
             .and_then(|m| m.get_one::<u32>("height"))
-        // .unwrap()
-        // .get_one::<u32>("height")
         {
             args.height = Some(*name as u32)
         };
@@ -92,6 +97,7 @@ impl Args {
                         *r,
                     );
                     let _ = img_result.save(args.format_output_name());
+                    println!("Blurred image saved as {:?}", args.format_output_name());
                 }
             }
             Some(("pixelate", sub_matches)) => {
@@ -100,6 +106,7 @@ impl Args {
                     args.pixel = Some(s.clone());
                     let img_result = pixelate(&img, (*s, *s));
                     let _ = img_result.save(args.format_output_name());
+                    println!("Pixelated image saved as {:?}", args.format_output_name());
                 }
             }
             Some(("scale", sub_matches)) => {
@@ -108,6 +115,7 @@ impl Args {
                     args.resize = Some(s.clone());
                     let img_result = resize(&img.into_rgba8(), (*s, *s));
                     let _ = img_result.save(args.format_output_name());
+                    println!("Scaled image saved as {:?}", args.format_output_name());
                 }
             }
             Some(("rotate", _sub_matches)) => {
@@ -117,16 +125,41 @@ impl Args {
                         .into_rgba8(),
                 );
                 let _ = img_result.save(args.format_output_name());
+                println!("Rotated image saved as {:?}", args.format_output_name());
             }
             Some(("mirror", _sub_matches)) => {
                 let img = ImageReader::open(args.filepath.clone())?.decode()?;
                 let img_result = img.fliph();
                 let _ = img_result.save(args.format_output_name());
+                println!("Mirrored image saved as {:?}", args.format_output_name());
             }
             Some(("flip_vertical", _sub_matches)) => {
                 let img = ImageReader::open(args.filepath.clone())?.decode()?;
                 let img_result = img.flipv();
                 let _ = img_result.save(args.format_output_name());
+                println!("Flipped image saved as {:?}", args.format_output_name());
+            }
+            Some(("monochrome_ugly", sub_matches)) => {
+                if let Some(t) = sub_matches.get_one::<f32>("threshold") {
+                    args.threshold = Some(t.clone());
+                    let img_result = monochrome_ugly(
+                        &ImageReader::open(args.filepath.clone())?
+                            .decode()?
+                            .into_rgba8(),
+                        *t,
+                    );
+                    let _ = img_result.save(args.format_output_name());
+                    println!("Monochrome image saved as {:?}", args.format_output_name());
+                }
+            }
+            Some(("grayscale", _sub_matches)) => {
+                let img_result = grayscale(
+                    &ImageReader::open(args.filepath.clone())?
+                        .decode()?
+                        .into_rgba8(),
+                );
+                let _ = img_result.save(args.format_output_name());
+                println!("Grayscale image saved as {:?}", args.format_output_name());
             }
             Some(("ascii", _sub_matches)) => {
                 let clusters =

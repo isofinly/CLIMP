@@ -40,6 +40,17 @@ pub fn make_commands() -> ArgMatches {
         .subcommand(Command::new("mirror").about("Mirrors the image"))
         .subcommand(Command::new("flip_vertical").about("Flips the image vertically"))
         .subcommand(Command::new("rotate").about("Rotates the image 90 degrees"))
+        .subcommand(Command::new("grayscale").about("Makes the image grayscale"))
+        .subcommand(
+            Command::new("monochrome_ugly")
+                .about("Makes the image monochrome")
+                .arg(
+                    arg!(-t --threshold <VALUE>)
+                        .default_value("128.0")
+                        .value_parser(value_parser!(f32))
+                        .action(ArgAction::Set),
+                ),
+        )
         .subcommand(
             Command::new("scale")
                 .about("Scales the image")
