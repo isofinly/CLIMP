@@ -3,7 +3,7 @@ import subprocess
 
 
 current_file_path = os.path.dirname(os.path.abspath(__file__))
-image_path = "/Users/isofinly/RustProjects/cli-image-processor/pics/tsopa.jpg"
+image_path = "../pics/photo.jpg"
 
 def run_rust_cli(args):
     """
@@ -21,7 +21,6 @@ def test_blur_command():
     assert "Blurred image saved as" in output
     assert os.path.exists('./out.png')
     print("\x1b[32mBLUR\x1b[0m COMMAND TEST PASSED")
-    
 def test_pixelate_command():
     args = [image_path, '-o', './out.png', 'pixelate', '-p', '10']
     output = run_rust_cli(args)

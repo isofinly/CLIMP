@@ -5,11 +5,15 @@ use std::time::Duration;
 
 pub type Image = ImageBuffer<Rgba<u8>, Vec<u8>>;
 
+/// Rotates the image by fixed amount of 90 degrees
 pub fn rotate(img: &Image) -> Image {
     let out_img = imageops::rotate90(img);
     out_img
 }
 
+/// Resizes the image to the given dimensions. 
+/// If the image is larger than the `new_dims`, 
+/// it will be cropped and missed pixels will be printed
 pub fn resize(img: &Image, new_dims: (u32, u32)) -> Image {
     let (old_width, old_height) = img.dimensions();
     let (new_width, new_height) = new_dims;
@@ -30,6 +34,8 @@ pub fn resize(img: &Image, new_dims: (u32, u32)) -> Image {
     resized
 }
 
+/// Pixelates the image based via `resize` function
+/// If there's an error then `resize` function will print problematic pixels
 pub fn pixelate(img: &DynamicImage, new_dims: (u32, u32)) -> Image {
     let old_dims = img.dimensions();
 
@@ -41,6 +47,8 @@ pub fn pixelate(img: &DynamicImage, new_dims: (u32, u32)) -> Image {
     pixelated
 }
 
+/// Blurs the image via standard gaussian blur
+/// It is not recommended to use large values for blur `radius` as the method complexity is not constant
 pub fn blur(img: &Image, radius: u32) -> Image {
     let pb = ProgressBar::new_spinner();
     pb.enable_steady_tick(Duration::from_millis(120));
@@ -59,7 +67,8 @@ pub fn blur(img: &Image, radius: u32) -> Image {
     pb.finish_with_message("\x1b[32mDone\x1b[0m");
     img
 }
-
+/// Monochromes the image into black and white regions based on luminance
+/// `Threshold` can be changed
 pub fn monochrome_ugly(img: &Image, threshold: f32) -> Image {
     let (width, height) = img.dimensions();
     let mut img_buf = ImageBuffer::new(width, height);
@@ -83,6 +92,7 @@ pub fn monochrome_ugly(img: &Image, threshold: f32) -> Image {
     img_buf
 }
 
+/// Grayscales the image
 pub fn grayscale(img: &Image) -> Image {
     let (width, height) = img.dimensions();
     let mut img_buf = ImageBuffer::new(width, height);
