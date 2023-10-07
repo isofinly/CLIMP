@@ -1,6 +1,9 @@
 use std::path::PathBuf;
+
 /// Command line arguments that can be parsed from the command line.
+///
 /// Implemented in @flag_matcher.
+///
 /// Formats output filename via `format_output_name` function.
 pub struct Args {
     filepath: PathBuf,
@@ -31,7 +34,7 @@ impl Args {
             height: None,
             colored: false,
             invert: false,
-            charset: "default".to_string(),
+            charset: String::from("default"),
             threshold: None,
         }
     }
@@ -131,7 +134,7 @@ impl Args {
     pub fn set_threshold(&mut self, threshold: Option<f32>) {
         self.threshold = threshold;
     }
-
+    /// Formats output filename based on `filepath` and extension if `file_ext` provided
     pub fn format_output_name(&self) -> PathBuf {
         let output_name = self
             .output

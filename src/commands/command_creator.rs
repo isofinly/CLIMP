@@ -1,6 +1,9 @@
 use clap::{arg, command, value_parser, ArgAction, ArgMatches, Command};
 use std::path::PathBuf;
 
+/// Creates command line arguments
+///
+/// Returns ArgMatches container for parse results
 pub fn make_commands() -> ArgMatches {
     let matches = command!() // requires `cargo` feature
         .arg(

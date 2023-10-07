@@ -11,8 +11,9 @@ pub fn rotate(img: &Image) -> Image {
     out_img
 }
 
-/// Resizes the image to the given dimensions. 
-/// If the image is larger than the `new_dims`, 
+/// Resizes the image to the given dimensions.
+///
+/// If the image is larger than the `new_dims`,
 /// it will be cropped and missed pixels will be printed
 pub fn resize(img: &Image, new_dims: (u32, u32)) -> Image {
     let (old_width, old_height) = img.dimensions();
@@ -35,6 +36,7 @@ pub fn resize(img: &Image, new_dims: (u32, u32)) -> Image {
 }
 
 /// Pixelates the image based via `resize` function
+///
 /// If there's an error then `resize` function will print problematic pixels
 pub fn pixelate(img: &DynamicImage, new_dims: (u32, u32)) -> Image {
     let old_dims = img.dimensions();
@@ -48,6 +50,7 @@ pub fn pixelate(img: &DynamicImage, new_dims: (u32, u32)) -> Image {
 }
 
 /// Blurs the image via standard gaussian blur
+///
 /// It is not recommended to use large values for blur `radius` as the method complexity is not constant
 pub fn blur(img: &Image, radius: u32) -> Image {
     let pb = ProgressBar::new_spinner();
@@ -68,7 +71,8 @@ pub fn blur(img: &Image, radius: u32) -> Image {
     img
 }
 /// Monochromes the image into black and white regions based on luminance
-/// `Threshold` can be changed
+///
+/// `Threshold` defines the luminance threshold for black and white
 pub fn monochrome_ugly(img: &Image, threshold: f32) -> Image {
     let (width, height) = img.dimensions();
     let mut img_buf = ImageBuffer::new(width, height);
@@ -98,7 +102,6 @@ pub fn grayscale(img: &Image) -> Image {
     let mut img_buf = ImageBuffer::new(width, height);
 
     for (x, y, pixel) in img.enumerate_pixels() {
-        
         let red = pixel[0] as f32;
         let green = pixel[1] as f32;
         let blue = pixel[2] as f32;

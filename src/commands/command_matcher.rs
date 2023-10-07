@@ -10,14 +10,18 @@ use super::{blur, grayscale, monochrome_ugly, pixelate, resize, rotate, Args};
 use ascii::{from_str, render, RenderOptions};
 
 impl Args {
-    pub fn match_flags(&mut self, matches: ArgMatches) -> Result<(), Box<dyn Error>> {
+    /// Matches command line arguments and calls the appropriate function
+    /// based on matches.subcommand() method
+    /// 
+    /// Takes Args struct and ArgMatches as input 
+    pub fn match_command(&mut self, matches: ArgMatches) -> Result<(), Box<dyn Error>> {
         
         /* Someday I'll use this for batch processing
-            .get_many::<String>("filepath")
-            .unwrap_or_default()
-            .map(|v| v.as_str())
-            .collect::<Vec<_>>();
-         */
+           .get_many::<String>("filepath")
+           .unwrap_or_default()
+           .map(|v| v.as_str())
+           .collect::<Vec<_>>();
+        */
 
         if let Some(path) = matches.get_one::<PathBuf>("filepath") {
             let file_ext_name = std::path::Path::new(&path)
@@ -26,20 +30,19 @@ impl Args {
                 .unwrap_or("jpg")
                 .to_string();
             self.set_filepath(PathBuf::from(path));
-            self.set_file_ext(Some(file_ext_name.clone()));
+            self.set_file_ext(Some(file_ext_name));
         }
 
         if let Some(name) = matches.get_one::<PathBuf>("output") {
             self.set_output(Some(PathBuf::from(name)));
             self.set_file_ext(Some(String::from(
                 self.get_output()
-                    .clone()
                     .unwrap()
                     .extension()
                     .unwrap()
                     .to_str()
-                    .unwrap()) 
-            ));
+                    .unwrap(),
+            )));
         } else {
             let filename = self
                 .get_filepath()
@@ -55,7 +58,11 @@ impl Args {
                     .parent()
                     .unwrap()
                     .join(filename)
-                    .with_extension(self.get_file_ext().as_deref().unwrap_or(&String::from("jpg"))),
+                    .with_extension(
+                        self.get_file_ext()
+                            .as_deref()
+                            .unwrap_or(&String::from("jpg")),
+                    ),
             ));
         }
 
@@ -94,6 +101,8 @@ impl Args {
             self.set_height(Some(*name as u32))
         };
 
+        let out_name = self.format_output_name();
+        
         match matches.subcommand() {
             Some(("blur", sub_matches)) => {
                 if let Some(r) = sub_matches.get_one::<u32>("blur_radius") {
@@ -104,8 +113,8 @@ impl Args {
                             .into_rgba8(),
                         *r,
                     );
-                    let _ = img_result.save(self.format_output_name());
-                    println!("Blurred image saved as {:?}", self.format_output_name());
+                    let _ = img_result.save(&out_name);
+                    println!("Blurred image saved as {:?}", &out_name);
                 }
             }
             Some(("pixelate", sub_matches)) => {
@@ -113,8 +122,8 @@ impl Args {
                 if let Some(s) = sub_matches.get_one::<u32>("pixel_size") {
                     self.set_pixel(Some(s.clone()));
                     let img_result = pixelate(&img, (*s, *s));
-                    let _ = img_result.save(self.format_output_name());
-                    println!("Pixelated image saved as {:?}", self.format_output_name());
+                    let _ = img_result.save(&out_name);
+                    println!("Pixelated image saved as {:?}", &out_name);
                 }
             }
             Some(("scale", sub_matches)) => {
@@ -122,8 +131,8 @@ impl Args {
                 if let Some(s) = sub_matches.get_one::<u32>("scale") {
                     self.set_resize(Some(s.clone()));
                     let img_result = resize(&img.into_rgba8(), (*s, *s));
-                    let _ = img_result.save(self.format_output_name());
-                    println!("Scaled image saved as {:?}", self.format_output_name());
+                    let _ = img_result.save(&out_name);
+                    println!("Scaled image saved as {:?}", &out_name);
                 }
             }
             Some(("rotate", _sub_matches)) => {
@@ -132,20 +141,20 @@ impl Args {
                         .decode()?
                         .into_rgba8(),
                 );
-                let _ = img_result.save(self.format_output_name());
-                println!("Rotated image saved as {:?}", self.format_output_name());
+                let _ = img_result.save(&out_name);
+                println!("Rotated image saved as {:?}", &out_name);
             }
             Some(("mirror", _sub_matches)) => {
                 let img = ImageReader::open(self.get_filepath().clone())?.decode()?;
                 let img_result = img.fliph();
-                let _ = img_result.save(self.format_output_name());
-                println!("Mirrored image saved as {:?}", self.format_output_name());
+                let _ = img_result.save(&out_name);
+                println!("Mirrored image saved as {:?}", &out_name);
             }
             Some(("flip_vertical", _sub_matches)) => {
                 let img = ImageReader::open(self.get_filepath().clone())?.decode()?;
                 let img_result = img.flipv();
-                let _ = img_result.save(self.format_output_name());
-                println!("Flipped image saved as {:?}", self.format_output_name());
+                let _ = img_result.save(&out_name);
+                println!("Flipped image saved as {:?}", &out_name);
             }
             Some(("monochrome_ugly", sub_matches)) => {
                 if let Some(t) = sub_matches.get_one::<f32>("threshold") {
@@ -156,8 +165,8 @@ impl Args {
                             .into_rgba8(),
                         *t,
                     );
-                    let _ = img_result.save(self.format_output_name());
-                    println!("Monochrome image saved as {:?}", self.format_output_name());
+                    let _ = img_result.save(&out_name);
+                    println!("Monochrome image saved as {:?}", &out_name);
                 }
             }
             Some(("grayscale", _sub_matches)) => {
@@ -166,12 +175,12 @@ impl Args {
                         .decode()?
                         .into_rgba8(),
                 );
-                let _ = img_result.save(self.format_output_name());
-                println!("Grayscale image saved as {:?}", self.format_output_name());
+                let _ = img_result.save(&out_name);
+                println!("Grayscale image saved as {:?}", &out_name);
             }
             Some(("ascii", _sub_matches)) => {
-                let clusters =
-                    UnicodeSegmentation::graphemes(self.get_charset().as_str(), true).collect::<Vec<_>>();
+                let clusters = UnicodeSegmentation::graphemes(self.get_charset().as_str(), true)
+                    .collect::<Vec<_>>();
                 let charset = from_str(self.get_charset().as_str()).unwrap_or(clusters.as_slice());
 
                 let path = self.get_filepath().clone();
