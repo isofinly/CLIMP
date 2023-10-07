@@ -92,6 +92,10 @@ pub fn make_commands() -> ArgMatches {
                     arg!(--charset <SET>)
                         .value_parser(value_parser!(String))
                         .action(ArgAction::Set),
+                ).arg(
+                    arg!(-v --verbose_only <BOOL>)
+                        .value_parser(value_parser!(bool))
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .get_matches();

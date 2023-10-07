@@ -1,9 +1,9 @@
-use crate::ascii;
+use crate::ascii::{self, render_to_file};
 use clap::ArgMatches;
 use image::io::Reader as ImageReader;
-use std::error::Error;
 use std::io;
 use std::path::PathBuf;
+use std::error::Error;
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::{blur, grayscale, monochrome_ugly, pixelate, resize, rotate, Args};
@@ -12,10 +12,11 @@ use ascii::{from_str, render, RenderOptions};
 impl Args {
     /// Matches command line arguments and calls the appropriate function
     /// based on matches.subcommand() method
-    /// 
-    /// Takes Args struct and ArgMatches as input 
+    ///
+    /// Takes Args struct and ArgMatches as input
+    ///
+    /// If no file extension is provided then jpg will be used
     pub fn match_command(&mut self, matches: ArgMatches) -> Result<(), Box<dyn Error>> {
-        
         /* Someday I'll use this for batch processing
            .get_many::<String>("filepath")
            .unwrap_or_default()
@@ -39,9 +40,8 @@ impl Args {
                 self.get_output()
                     .unwrap()
                     .extension()
-                    .unwrap()
-                    .to_str()
-                    .unwrap(),
+                    .and_then(std::ffi::OsStr::to_str)
+                    .unwrap_or("jpg"),
             )));
         } else {
             let filename = self
@@ -78,6 +78,14 @@ impl Args {
             && matches
                 .subcommand_matches("ascii")
                 .unwrap()
+                .get_flag("verbose_only")
+        {
+            self.set_verbose_only(true);
+        };
+        if matches.subcommand_matches("ascii").is_some()
+            && matches
+                .subcommand_matches("ascii")
+                .unwrap()
                 .get_flag("invert")
         {
             self.set_invert(true);
@@ -102,7 +110,7 @@ impl Args {
         };
 
         let out_name = self.format_output_name();
-        
+
         match matches.subcommand() {
             Some(("blur", sub_matches)) => {
                 if let Some(r) = sub_matches.get_one::<u32>("blur_radius") {
@@ -178,26 +186,47 @@ impl Args {
                 let _ = img_result.save(&out_name);
                 println!("Grayscale image saved as {:?}", &out_name);
             }
-            Some(("ascii", _sub_matches)) => {
+            Some(("ascii", sub_matches)) => {
                 let clusters = UnicodeSegmentation::graphemes(self.get_charset().as_str(), true)
                     .collect::<Vec<_>>();
                 let charset = from_str(self.get_charset().as_str()).unwrap_or(clusters.as_slice());
 
                 let path = self.get_filepath().clone();
 
-                render(
-                    path.to_str().unwrap(),
-                    &mut io::stdout(),
-                    &RenderOptions {
-                        width: self.get_width().or(Some(80)),
-                        height: self.get_height(),
-                        colored: self.is_colored(),
-                        invert: self.is_invert(),
-                        charset,
-                    },
-                )?;
+                if self.get_output().is_some() {
+                    let out_name = out_name.file_stem().map(|stem| {
+                        let mut new_path = out_name.clone();
+                        new_path.set_file_name(stem);
+                        new_path
+                    });
+                    if sub_matches.get_flag("verbose_only") {
+                        render(
+                            path.to_str().unwrap(),
+                            &mut io::stdout(),
+                            &RenderOptions {
+                                width: self.get_width().or(Some(80)),
+                                height: self.get_height(),
+                                colored: self.is_colored(),
+                                invert: self.is_invert(),
+                                charset,
+                            },
+                        )?;
+                    } else {
+                        render_to_file(
+                            path.to_str().unwrap(),
+                            &out_name.unwrap(),
+                            &RenderOptions {
+                                width: self.get_width().or(Some(80)),
+                                height: self.get_height(),
+                                colored: self.is_colored(),
+                                invert: self.is_invert(),
+                                charset,
+                            },
+                        )?;
+                    }
+                }
             }
-            _ => println!("Unidentified subcommand."),
+            _ => println!("Unidentified subcommand. \n Use '--help' for more information"),
         }
         Ok(())
     }

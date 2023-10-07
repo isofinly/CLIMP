@@ -115,6 +115,8 @@ pub fn grayscale(img: &Image) -> Image {
     img_buf
 }
 
+
+
 // pub fn extract_qr(img: &Image) -> Option<String> {
 //     todo!()
 // }

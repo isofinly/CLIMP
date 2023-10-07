@@ -2,7 +2,19 @@ use super::image_renderer::ImageRenderer;
 use super::renderer::RenderOptions;
 use super::renderer::Renderer;
 use image::DynamicImage;
+use image::ImageResult;
 use std::{io, path::Path};
+
+pub fn render_to_file<P1: AsRef<Path>, P2: AsRef<Path>>(
+    input_path: P1,
+    output_path: P2,
+    options: &RenderOptions<'_>,
+) -> ImageResult<()> {
+    let image = image::open(input_path)?;
+    let mut output_file = io::BufWriter::new(std::fs::File::create(output_path)?);
+    render_image(&image, &mut output_file, options)?;
+    Ok(())
+}
 
 pub fn render<P: AsRef<Path> + AsRef<str>>(
     path: P,

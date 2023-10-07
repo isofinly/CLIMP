@@ -18,6 +18,7 @@ pub struct Args {
     invert: bool,
     charset: String,
     threshold: Option<f32>,
+    verbose_only: bool,
 }
 
 #[allow(dead_code)]
@@ -36,6 +37,7 @@ impl Args {
             invert: false,
             charset: String::from("default"),
             threshold: None,
+            verbose_only: false,
         }
     }
 
@@ -87,6 +89,10 @@ impl Args {
         self.threshold
     }
 
+    pub fn get_verbose_only(&self) -> bool {
+        self.verbose_only
+    }
+
     pub fn set_filepath(&mut self, filepath: PathBuf) {
         self.filepath = filepath;
     }
@@ -134,6 +140,11 @@ impl Args {
     pub fn set_threshold(&mut self, threshold: Option<f32>) {
         self.threshold = threshold;
     }
+
+    pub fn set_verbose_only(&mut self, verbose_only: bool) {
+        self.verbose_only = verbose_only;
+    }
+
     /// Formats output filename based on `filepath` and extension if `file_ext` provided
     pub fn format_output_name(&self) -> PathBuf {
         let output_name = self
