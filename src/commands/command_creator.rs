@@ -7,7 +7,7 @@ use std::path::PathBuf;
 pub fn make_commands() -> ArgMatches {
     let matches = command!() // requires `cargo` feature
         .arg(
-            arg!([filepath] "File path")
+            arg!([filepath] "File path to image you want to edit")
                 .required(true)
                 .value_parser(value_parser!(PathBuf)),
         )
@@ -16,6 +16,7 @@ pub fn make_commands() -> ArgMatches {
                 -o --output <filepath> "Output filepath"
             )
             .value_parser(value_parser!(PathBuf))
+            .help("Can be set to one of ImageFormat's values: Png, Jpeg, Gif, WebP, Pnm, Tiff, Tga, Dds,  Bmp, Ico, Hdr, OpenExr, Farbfeld, Avif, Qoi. But \x1b[31mascii\x1b[0m command produces files without any extension")
             .action(ArgAction::Set),
         )
         .subcommand(
@@ -31,7 +32,7 @@ pub fn make_commands() -> ArgMatches {
         )
         .subcommand(
             Command::new("blur")
-                .about("Blurs the image with a given radius")
+                .about("Blur the image with a given radius")
                 .arg_required_else_help(true)
                 .arg(
                     arg!(-r --blur_radius <VALUE>)
@@ -40,13 +41,13 @@ pub fn make_commands() -> ArgMatches {
                         .action(ArgAction::Set),
                 ),
         )
-        .subcommand(Command::new("mirror").about("Mirrors the image"))
-        .subcommand(Command::new("flip_vertical").about("Flips the image vertically"))
-        .subcommand(Command::new("rotate").about("Rotates the image 90 degrees"))
-        .subcommand(Command::new("grayscale").about("Makes the image grayscale"))
+        .subcommand(Command::new("mirror").about("Mirror the image"))
+        .subcommand(Command::new("flip_vertical").about("Flip the image vertically"))
+        .subcommand(Command::new("rotate").about("Rotate an image 90 degrees clockwise"))
+        .subcommand(Command::new("grayscale").about("Make the image grayscale"))
         .subcommand(
             Command::new("monochrome_ugly")
-                .about("Makes the image monochrome")
+                .about("Make the image monochrome")
                 .arg(
                     arg!(-t --threshold <VALUE>)
                         .default_value("128.0")
@@ -56,7 +57,7 @@ pub fn make_commands() -> ArgMatches {
         )
         .subcommand(
             Command::new("scale")
-                .about("Scales the image")
+                .about("Scale the image")
                 .arg_required_else_help(true)
                 .arg(
                     arg!(-s --scale <VALUE>)
@@ -67,7 +68,7 @@ pub fn make_commands() -> ArgMatches {
         )
         .subcommand(
             Command::new("ascii")
-                .about("Renders image as an ASCII art with a given charset")
+                .about("Render image as an ASCII art with a given charset")
                 .arg(
                     arg!(--width <VALUE>)
                         .value_parser(value_parser!(u32))
@@ -97,6 +98,12 @@ pub fn make_commands() -> ArgMatches {
                         .value_parser(value_parser!(bool))
                         .action(ArgAction::SetTrue),
                 ),
+        )
+        .subcommand(
+            Command::new("curse").about("Curse the image")                
+        )
+        .subcommand(
+            Command::new("zxc").about("Ultimate zxc dead inside the image")                
         )
         .get_matches();
     matches
