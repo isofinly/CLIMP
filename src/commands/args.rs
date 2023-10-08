@@ -10,8 +10,9 @@ pub struct Args {
     radius: Option<u32>,
     pixel: Option<u32>,
     resize: Option<u32>,
-    output: Option<PathBuf>,
     file_ext: Option<String>,
+    output_name: PathBuf,
+    output_ext: Option<String>,
     width: Option<u32>,
     height: Option<u32>,
     colored: bool,
@@ -28,9 +29,10 @@ impl Args {
             filepath: PathBuf::from(""),
             radius: None,
             pixel: None,
-            output: None,
             resize: None,
             file_ext: None,
+            output_name: PathBuf::from(""),
+            output_ext: None,
             width: None,
             height: None,
             colored: false,
@@ -55,10 +57,6 @@ impl Args {
 
     pub fn get_resize(&self) -> Option<u32> {
         self.resize
-    }
-
-    pub fn get_output(&self) -> Option<&PathBuf> {
-        self.output.as_ref()
     }
 
     pub fn get_file_ext(&self) -> Option<&String> {
@@ -93,6 +91,14 @@ impl Args {
         self.verbose_only
     }
 
+    pub fn get_output_name(&self) -> &PathBuf {
+        &self.output_name
+    }
+
+    pub fn get_output_ext(&self) -> Option<&String> {
+        self.output_ext.as_ref()
+    }    
+
     pub fn set_filepath(&mut self, filepath: PathBuf) {
         self.filepath = filepath;
     }
@@ -107,10 +113,6 @@ impl Args {
 
     pub fn set_resize(&mut self, resize: Option<u32>) {
         self.resize = resize;
-    }
-
-    pub fn set_output(&mut self, output: Option<PathBuf>) {
-        self.output = output;
     }
 
     pub fn set_file_ext(&mut self, file_ext: Option<String>) {
@@ -145,13 +147,12 @@ impl Args {
         self.verbose_only = verbose_only;
     }
 
-    /// Formats output filename based on `filepath` and extension if `file_ext` provided
-    pub fn format_output_name(&self) -> PathBuf {
-        let output_name = self
-            .output
-            .as_ref()
-            .unwrap_or(&self.filepath)
-            .with_extension(self.file_ext.as_deref().unwrap_or("jpg"));
-        output_name
+    pub fn set_output_name(&mut self, output_name: PathBuf) {
+        self.output_name = output_name;
     }
+
+    pub fn set_output_ext(&mut self, output_ext: Option<String>) {
+        self.output_ext = output_ext;
+    }
+
 }
