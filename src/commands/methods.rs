@@ -114,9 +114,40 @@ pub fn grayscale(img: &Image) -> Image {
     }
     img_buf
 }
+/// Curses the image stretching and squishing it by 1.5 & 0.5 correspondingly
+/// 
+/// After that pixelate the image with pixel size of 5
+pub fn curse(img: &Image) -> Image {
+    let stretch_x = 1.5;
+    let stretch_y = 0.5;
+
+    let (old_width, old_height) = img.dimensions();
+
+    let new_width = (old_width as f32 * stretch_x) as u32;
+    let new_height = (old_height as f32 * stretch_y) as u32;
+
+    let mut cursed = ImageBuffer::new(new_width, new_height);
+
+    for (new_x, new_y, pixel) in cursed.enumerate_pixels_mut() {
+        let old_x = (new_x as f32 * (old_width as f32 / new_width as f32)) as u32;
+        let old_y = (new_y as f32 * (old_height as f32 / new_height as f32)) as u32;
+
+        if let Some(old_pixel) = img.get_pixel_checked(old_x, old_y) {
+            *pixel = *old_pixel;
+        } else {
+            println!("({old_x} -> {new_x}, {old_y} -> {new_y})");
+        }
+    }
+     
+    pixelate(&DynamicImage::ImageRgba8(cursed), (5,5))
+    
+}
 
 
-
-// pub fn extract_qr(img: &Image) -> Option<String> {
-//     todo!()
-// }
+/// ZXC the image. Ultimate dead inside happens here. 
+/// 
+/// Wish you the worst of luck.
+pub fn zxc(img: &Image) -> Image {
+    let mid_curse: ImageBuffer<Rgba<u8>, Vec<u8>> = curse(img);
+    monochrome_ugly(&mid_curse, 125.0)
+}
