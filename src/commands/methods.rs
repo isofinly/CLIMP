@@ -7,8 +7,7 @@ pub type Image = ImageBuffer<Rgba<u8>, Vec<u8>>;
 
 /// Rotates the image by fixed amount of 90 degrees
 pub fn rotate(img: &Image) -> Image {
-    let out_img = imageops::rotate90(img);
-    out_img
+    imageops::rotate90(img)
 }
 
 /// Resizes the image to the given dimensions.
@@ -45,8 +44,7 @@ pub fn pixelate(img: &DynamicImage, new_dims: (u32, u32)) -> Image {
 
     let small = resize(&img, ((old_dims.0 / new_dims.0), (old_dims.1 / new_dims.1)));
 
-    let pixelated = resize(&small, old_dims);
-    pixelated
+    resize(&small, old_dims)
 }
 
 /// Blurs the image via standard gaussian blur
@@ -115,7 +113,7 @@ pub fn grayscale(img: &Image) -> Image {
     img_buf
 }
 /// Curses the image stretching and squishing it by 1.5 & 0.5 correspondingly
-/// 
+///
 /// After that pixelate the image with pixel size of 5
 pub fn curse(img: &Image) -> Image {
     let stretch_x = 1.5;
@@ -138,14 +136,12 @@ pub fn curse(img: &Image) -> Image {
             println!("({old_x} -> {new_x}, {old_y} -> {new_y})");
         }
     }
-     
-    pixelate(&DynamicImage::ImageRgba8(cursed), (5,5))
-    
+
+    pixelate(&DynamicImage::ImageRgba8(cursed), (5, 5))
 }
 
-
-/// ZXC the image. Ultimate dead inside happens here. 
-/// 
+/// ZXC the image. Ultimate dead inside happens here.
+///
 /// Wish you the worst of luck.
 pub fn zxc(img: &Image) -> Image {
     let mid_curse: ImageBuffer<Rgba<u8>, Vec<u8>> = curse(img);

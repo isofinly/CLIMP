@@ -1,14 +1,12 @@
-mod commands;
 mod ascii;
+mod commands;
 
-use std::error::Error;
 use commands::{make_commands, Args};
+use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
 
-    let matches = make_commands();
-
-    let _ = Args::match_command(&mut Args::new(), matches);
+    let _ = Args::match_command(&mut Args::new(), make_commands());
 
     Ok(())
 }

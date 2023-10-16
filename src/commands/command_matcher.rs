@@ -7,7 +7,7 @@ use std::io;
 use std::path::PathBuf;
 use unicode_segmentation::UnicodeSegmentation;
 
-use super::{blur, grayscale, monochrome_ugly, pixelate, resize, rotate, curse, zxc, Args};
+use super::{blur, curse, grayscale, monochrome_ugly, pixelate, resize, rotate, zxc, Args};
 use ascii::{from_str, render, RenderOptions};
 
 impl Args {
@@ -65,36 +65,23 @@ impl Args {
                     + "."
                     + self
                         .get_file_ext()
-                        .as_deref()
                         .unwrap_or(&String::from("jpg")),
             ));
             self.set_output_ext(Some(String::from("jpg")));
         }
 
-        if matches.subcommand_matches("ascii").is_some()
-            && matches
-                .subcommand_matches("ascii")
-                .unwrap()
-                .get_flag("colored")
-        {
-            self.set_colored(true);
-        };
-        if matches.subcommand_matches("ascii").is_some()
-            && matches
-                .subcommand_matches("ascii")
-                .unwrap()
-                .get_flag("verbose_only")
-        {
-            self.set_verbose_only(true);
-        };
-        if matches.subcommand_matches("ascii").is_some()
-            && matches
-                .subcommand_matches("ascii")
-                .unwrap()
-                .get_flag("invert")
-        {
-            self.set_invert(true);
-        };
+        if let Some(subcommand_matches) = matches.subcommand_matches("ascii") {
+            if subcommand_matches.get_flag("colored") {
+                self.set_colored(true);
+            }
+            if subcommand_matches.get_flag("verbose_only") {
+                self.set_verbose_only(true);
+            }
+            if subcommand_matches.get_flag("invert") {
+                self.set_invert(true);
+            }
+        }
+
         if let Some(name) = matches
             .subcommand_matches("ascii")
             .and_then(|m| m.get_one::<String>("charset"))
@@ -105,19 +92,19 @@ impl Args {
             .subcommand_matches("ascii")
             .and_then(|m| m.get_one::<u32>("width"))
         {
-            self.set_width(Some(*name as u32))
+            self.set_width(Some(*name))
         };
         if let Some(name) = matches
             .subcommand_matches("ascii")
             .and_then(|m| m.get_one::<u32>("height"))
         {
-            self.set_height(Some(*name as u32))
+            self.set_height(Some(*name))
         };
 
         match matches.subcommand() {
             Some(("blur", sub_matches)) => {
                 if let Some(r) = sub_matches.get_one::<u32>("blur_radius") {
-                    self.set_radius(Some(r.clone()));
+                    self.set_radius(Some(*r));
                     let img_result = blur(
                         &ImageReader::open(self.get_filepath().clone())?
                             .decode()?
@@ -135,7 +122,7 @@ impl Args {
             Some(("pixelate", sub_matches)) => {
                 let img = ImageReader::open(self.get_filepath().clone())?.decode()?;
                 if let Some(s) = sub_matches.get_one::<u32>("pixel_size") {
-                    self.set_pixel(Some(s.clone()));
+                    self.set_pixel(Some(*s));
                     let img_result = pixelate(&img, (*s, *s));
                     let _ = img_result.save_with_format(
                         self.get_output_name(),
@@ -148,7 +135,7 @@ impl Args {
             Some(("scale", sub_matches)) => {
                 let img = ImageReader::open(self.get_filepath().clone())?.decode()?;
                 if let Some(s) = sub_matches.get_one::<u32>("scale") {
-                    self.set_resize(Some(s.clone()));
+                    self.set_resize(Some(*s));
                     let img_result = resize(&img.into_rgba8(), (*s, *s));
                     let _ = img_result.save_with_format(
                         self.get_output_name(),
@@ -193,7 +180,7 @@ impl Args {
             }
             Some(("monochrome_ugly", sub_matches)) => {
                 if let Some(t) = sub_matches.get_one::<f32>("threshold") {
-                    self.set_threshold(Some(t.clone()));
+                    self.set_threshold(Some(*t));
                     let img_result = monochrome_ugly(
                         &ImageReader::open(self.get_filepath().clone())?
                             .decode()?
@@ -266,7 +253,6 @@ impl Args {
                         .unwrap_or(ImageFormat::Jpeg),
                 );
                 println!("Cursed image saved as {:?}", self.get_output_name());
-
             }
             Some(("zxc", _sub_matches)) => {
                 let img_result = zxc(&ImageReader::open(self.get_filepath().clone())?

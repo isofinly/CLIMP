@@ -5,6 +5,7 @@ use std::path::PathBuf;
 /// Implemented in @flag_matcher.
 ///
 /// Formats output filename via `format_output_name` function.
+#[derive(Debug, Default)]
 pub struct Args {
     filepath: PathBuf,
     radius: Option<u32>,
@@ -25,22 +26,7 @@ pub struct Args {
 #[allow(dead_code)]
 impl Args {
     pub fn new() -> Self {
-        Args {
-            filepath: PathBuf::from(""),
-            radius: None,
-            pixel: None,
-            resize: None,
-            file_ext: None,
-            output_name: PathBuf::from(""),
-            output_ext: None,
-            width: None,
-            height: None,
-            colored: false,
-            invert: false,
-            charset: String::from("default"),
-            threshold: None,
-            verbose_only: false,
-        }
+        Args::default()
     }
 
     pub fn get_filepath(&self) -> &PathBuf {

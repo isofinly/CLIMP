@@ -1,8 +1,10 @@
 mod args;
 mod command_creator;
-mod methods;
 mod command_matcher;
+mod methods;
 
-pub use crate::commands::command_creator::make_commands;
 pub use crate::commands::args::Args;
-pub use crate::commands::methods::{rotate, resize, pixelate, blur, monochrome_ugly, grayscale, curse, zxc};
+pub use crate::commands::command_creator::make_commands;
+pub use crate::commands::methods::{
+    blur, curse, grayscale, monochrome_ugly, pixelate, resize, rotate, zxc,
+};

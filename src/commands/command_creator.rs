@@ -5,7 +5,7 @@ use std::path::PathBuf;
 ///
 /// Returns ArgMatches container for parse results
 pub fn make_commands() -> ArgMatches {
-    let matches = command!() // requires `cargo` feature
+    command!() // requires `cargo` feature
         .arg(
             arg!([filepath] "File path to image you want to edit")
                 .required(true)
@@ -105,6 +105,5 @@ pub fn make_commands() -> ArgMatches {
         .subcommand(
             Command::new("zxc").about("Ultimate zxc dead inside the image")                
         )
-        .get_matches();
-    matches
+        .get_matches()
 }
