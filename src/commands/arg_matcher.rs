@@ -2,9 +2,9 @@ use crate::ascii::{self, render_to_file};
 use clap::ArgMatches;
 use image::io::Reader as ImageReader;
 use image::ImageFormat;
-use std::error::Error;
 use std::io;
 use std::path::PathBuf;
+use std::error::Error;
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::{blur, curse, grayscale, monochrome_ugly, pixelate, resize, rotate, zxc, Args};
@@ -17,7 +17,7 @@ impl Args {
     /// Takes Args struct and ArgMatches as input
     ///
     /// If no file extension is provided then jpg will be used
-    pub fn match_command(&mut self, matches: ArgMatches) -> Result<(), Box<dyn Error>> {
+    pub fn match_arg(&mut self, matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
         /* Someday I'll use this for batch processing
            .get_many::<String>("filepath")
            .unwrap_or_default()
@@ -53,7 +53,7 @@ impl Args {
                     None => "jpg",
                 },
             )));
-        } else {
+        } else if !matches.get_flag("interactive"){
             self.set_output_name(PathBuf::from(
                 self.get_filepath()
                     .file_stem()
@@ -63,9 +63,7 @@ impl Args {
                     .to_string()
                     + "_edited"
                     + "."
-                    + self
-                        .get_file_ext()
-                        .unwrap_or(&String::from("jpg")),
+                    + self.get_file_ext().unwrap_or(&String::from("jpg")),
             ));
             self.set_output_ext(Some(String::from("jpg")));
         }
@@ -265,7 +263,11 @@ impl Args {
                 );
                 println!("ZXCursed image saved as {:?}", self.get_output_name());
             }
-            _ => println!("Unidentified subcommand. \n Use '--help' for more information"),
+            _ => {
+                if !matches.get_flag("interactive") {
+                    println!("Unidentified subcommand. \nUse '--help' for more information")
+                }
+            }
         }
         Ok(())
     }

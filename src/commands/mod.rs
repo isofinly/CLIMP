@@ -1,6 +1,7 @@
 mod args;
 mod command_creator;
-mod command_matcher;
+mod arg_matcher;
+mod interactive_matcher;
 mod methods;
 
 pub use crate::commands::args::Args;

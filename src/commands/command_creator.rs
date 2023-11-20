@@ -5,7 +5,13 @@ use std::path::PathBuf;
 ///
 /// Returns ArgMatches container for parse results
 pub fn make_commands() -> ArgMatches {
-    command!() // requires `cargo` feature
+    command!()
+        .arg(
+            arg!(--interactive <bool> "Enter interactive mode \nSubcommands will be ignored")
+            .value_parser(value_parser!(bool))
+            .conflicts_with_all(["filepath", "output"])
+            .action(ArgAction::SetTrue),
+        )
         .arg(
             arg!([filepath] "File path to image you want to edit")
                 .required(true)
