@@ -6,6 +6,3 @@ mod methods;
 
 pub use crate::commands::args::Args;
 pub use crate::commands::command_creator::make_commands;
-pub use crate::commands::methods::{
-    blur, curse, grayscale, monochrome_ugly, pixelate, resize, rotate, zxc,
-};

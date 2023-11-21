@@ -1,15 +1,10 @@
-use crate::ascii::{self, render_to_file};
 use clap::ArgMatches;
 use dialoguer::Select;
 use dialoguer::{theme::ColorfulTheme, Input};
-use image::io::Reader as ImageReader;
-use image::ImageFormat;
-use std::io;
 use std::path::PathBuf;
 use std::{error::Error, process};
 
-use super::{blur, curse, grayscale, monochrome_ugly, pixelate, resize, rotate, zxc, Args};
-use ascii::{from_str, render, RenderOptions};
+use super::Args;
 
 impl Args {
     pub fn interactive_matcher(&mut self, matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
@@ -27,25 +22,12 @@ impl Args {
             "zxc",
             "exit",
         ];
+        let flags = &[true, false];
 
         if matches.get_flag("interactive") {
-            println!("Type exit to exit | Help for help");
             loop {
-                // if let Ok(cmd) = Input::<String>::with_theme(&ColorfulTheme::default())
-                //     .with_prompt("$")
-                //     .interact_text()
-                // {
-                //     match cmd.as_str() {
-                //         "exit" => {
-                //             process::exit(0);
-                //         }
-                //         _ => {
-                //             // println!("{}", cmd);
-                //         }
-                //     }
-                // }
                 let command = Select::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Pick your flavor")
+                    .with_prompt("$")
                     .default(0)
                     .items(&commands[..])
                     .interact()
@@ -55,39 +37,85 @@ impl Args {
                 match command.get(..) {
                     Some("pixelate") => {
                         handle_input_file(self)?;
-                        println!("pixelate: {:?}{:?}", self.get_filepath(), self.get_file_ext());
                         handle_output_file(self)?;
-                        println!("pixelate: {:?}{:?}", self.get_output_name(), self.get_output_ext());
+                        handle_pixel_size(self);
+                        Args::pixelate(self)?;
+                        println!()
                     }
                     Some("blur") => {
-                        println!("blur")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        handle_blur_radius(self);
+                        Args::blur(self)?;
+                        println!()
                     }
                     Some("mirror") => {
-                        println!("mirror")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        Args::mirror(self)?;
+                        println!()
                     }
                     Some("flip_vertical") => {
-                        println!("flip_vertical")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        Args::flip_vertical(self)?;
+                        println!()
                     }
                     Some("rotate") => {
-                        println!("rotate")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        Args::rotate(self)?;
+                        println!()
                     }
                     Some("grayscale") => {
-                        println!("grayscale")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        Args::grayscale(self)?;
+                        println!()
                     }
                     Some("monochrome_ugly") => {
-                        println!("monochrome_ugly")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        handle_threshold(self);
+                        Args::monochrome_ugly(self)?;
+                        println!()
                     }
                     Some("scale") => {
-                        println!("scale")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        handle_scale_factor(self);
+                        Args::resize(self)?;
+                        println!()
                     }
                     Some("ascii") => {
-                        println!("ascii")
+                        handle_input_file(self)?;
+                        self.set_file_ext(Some(String::from("txt")));
+                        handle_output_file(self)?;
+
+
+                        let flag = Select::with_theme(&ColorfulTheme::default())
+                            .with_prompt("Render only in console or in file?")
+                            .default(0)
+                            .items(&flags[..])
+                            .interact()
+                            .unwrap();
+
+                        let flag = &flags[flag];
+
+                        Args::ascii(self, *flag)?;
+                        println!()
                     }
                     Some("curse") => {
-                        println!("curse")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        Args::curse(self)?;
+                        println!()
                     }
                     Some("zxc") => {
-                        println!("zxc")
+                        handle_input_file(self)?;
+                        handle_output_file(self)?;
+                        Args::zxc(self)?;
+                        println!()
                     }
                     Some("exit") => {
                         process::exit(0);
@@ -104,7 +132,7 @@ impl Args {
 
 fn handle_input_file(args: &mut Args) -> Result<(), Box<dyn Error>> {
     let path: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("Enter path to input image")
+        .with_prompt("Path to input image")
         .interact_text()
         .unwrap();
 
@@ -119,10 +147,10 @@ fn set_input_filepath(path: PathBuf, args: &mut Args) {
     args.set_filepath(PathBuf::from(path));
 }
 
-fn set_input_extension(args: &mut Args) -> Result<(), Box<dyn Error>> {
+fn set_input_extension(args: &mut Args) -> Result<(), Box<dyn Error>>  {
     let path = args.get_filepath();
-    if path.extension().and_then(std::ffi::OsStr::to_str).is_none() {
-        return Err("File with no extension provided".into());
+    if  path.extension().is_none() {
+        return Err("Output file must have an extension".into());
     }
     let extension = path
         .extension()
@@ -131,13 +159,22 @@ fn set_input_extension(args: &mut Args) -> Result<(), Box<dyn Error>> {
         .to_string();
 
     args.set_file_ext(Some(extension));
-
     Ok(())
 }
 
 fn handle_output_file(args: &mut Args) -> Result<(), Box<dyn Error>> {
     let path: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("Enter path to output image")
+        .with_prompt("Path to output image")
+        .default(
+            args.get_filepath()
+                .file_stem()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string()
+                + "_edited."
+                + &args.get_file_ext().unwrap(),
+        )
         .interact_text()
         .unwrap();
 
@@ -154,8 +191,8 @@ fn set_output_filepath(path: PathBuf, args: &mut Args) {
 
 fn set_output_extension(args: &mut Args) -> Result<(), Box<dyn Error>> {
     let path = args.get_output_name();
-    if path.extension().and_then(std::ffi::OsStr::to_str).is_none() {
-        return Err("File with no extension provided".into());
+    if  path.extension().is_none() {
+        return Err("Output file must have an extension".into());
     }
     let extension = path
         .extension()
@@ -166,4 +203,40 @@ fn set_output_extension(args: &mut Args) -> Result<(), Box<dyn Error>> {
     args.set_output_ext(Some(extension));
 
     Ok(())
+}
+
+fn handle_pixel_size(args: &mut Args) {
+    let size: u32 = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Pixel size of output image pixels")
+        .interact_text()
+        .unwrap();
+
+    args.set_pixel(Some(size));
+}
+
+fn handle_blur_radius(args: &mut Args) {
+    let radius: u32 = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Blur radius")
+        .interact_text()
+        .unwrap();
+
+    args.set_blur_radius(Some(radius));
+}
+
+fn handle_threshold(args: &mut Args) {
+    let threshold: f32 = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Threshold")
+        .interact_text()
+        .unwrap();
+
+    args.set_threshold(Some(threshold));
+}
+
+fn handle_scale_factor(args: &mut Args) {
+    let factor: u32 = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("New dimensions")
+        .interact_text()
+        .unwrap();
+
+    args.set_resize(Some(factor));
 }

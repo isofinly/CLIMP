@@ -105,7 +105,7 @@ pub fn make_commands() -> ArgMatches {
                         .action(ArgAction::SetTrue),
                 ),
         )
-        .subcommand(
+            .subcommand(
             Command::new("curse").about("Curse the image")                
         )
         .subcommand(

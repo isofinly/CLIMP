@@ -1,14 +1,8 @@
-use crate::ascii::{self, render_to_file};
+use super::Args;
 use clap::ArgMatches;
-use image::io::Reader as ImageReader;
 use image::ImageFormat;
-use std::io;
-use std::path::PathBuf;
 use std::error::Error;
-use unicode_segmentation::UnicodeSegmentation;
-
-use super::{blur, curse, grayscale, monochrome_ugly, pixelate, resize, rotate, zxc, Args};
-use ascii::{from_str, render, RenderOptions};
+use std::path::PathBuf;
 
 impl Args {
     /// Matches command line arguments and calls the appropriate function
@@ -53,7 +47,7 @@ impl Args {
                     None => "jpg",
                 },
             )));
-        } else if !matches.get_flag("interactive"){
+        } else if !matches.get_flag("interactive") {
             self.set_output_name(PathBuf::from(
                 self.get_filepath()
                     .file_stem()
@@ -102,166 +96,49 @@ impl Args {
         match matches.subcommand() {
             Some(("blur", sub_matches)) => {
                 if let Some(r) = sub_matches.get_one::<u32>("blur_radius") {
-                    self.set_radius(Some(*r));
-                    let img_result = blur(
-                        &ImageReader::open(self.get_filepath().clone())?
-                            .decode()?
-                            .into_rgba8(),
-                        *r,
-                    );
-                    let _ = img_result.save_with_format(
-                        self.get_output_name(),
-                        ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                            .unwrap_or(ImageFormat::Jpeg),
-                    );
-                    println!("Blurred image saved as {:?}", self.get_output_name());
+                    self.set_blur_radius(Some(*r));
+                    Args::blur(self)?;
                 }
             }
             Some(("pixelate", sub_matches)) => {
-                let img = ImageReader::open(self.get_filepath().clone())?.decode()?;
                 if let Some(s) = sub_matches.get_one::<u32>("pixel_size") {
                     self.set_pixel(Some(*s));
-                    let img_result = pixelate(&img, (*s, *s));
-                    let _ = img_result.save_with_format(
-                        self.get_output_name(),
-                        ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                            .unwrap_or(ImageFormat::Jpeg),
-                    );
-                    println!("Pixelated image saved as {:?}", self.get_output_name());
+                    Args::pixelate(self)?;
                 }
             }
             Some(("scale", sub_matches)) => {
-                let img = ImageReader::open(self.get_filepath().clone())?.decode()?;
                 if let Some(s) = sub_matches.get_one::<u32>("scale") {
                     self.set_resize(Some(*s));
-                    let img_result = resize(&img.into_rgba8(), (*s, *s));
-                    let _ = img_result.save_with_format(
-                        self.get_output_name(),
-                        ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                            .unwrap_or(ImageFormat::Jpeg),
-                    );
-                    println!("Scaled image saved as {:?}", self.get_output_name());
+                    Args::resize(self)?;
                 }
             }
             Some(("rotate", _sub_matches)) => {
-                let img_result = rotate(
-                    &ImageReader::open(self.get_filepath().clone())?
-                        .decode()?
-                        .into_rgba8(),
-                );
-                let _ = img_result.save_with_format(
-                    self.get_output_name(),
-                    ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                        .unwrap_or(ImageFormat::Jpeg),
-                );
-                println!("Rotated image saved as {:?}", self.get_output_name());
+                Args::rotate(self)?;
             }
             Some(("mirror", _sub_matches)) => {
-                let img = ImageReader::open(self.get_filepath().clone())?.decode()?;
-                let img_result = img.fliph();
-                let _ = img_result.save_with_format(
-                    self.get_output_name(),
-                    ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                        .unwrap_or(ImageFormat::Jpeg),
-                );
-                println!("Mirrored image saved as {:?}", self.get_output_name());
+                Args::mirror(self)?;
             }
             Some(("flip_vertical", _sub_matches)) => {
-                let img = ImageReader::open(self.get_filepath().clone())?.decode()?;
-                let img_result = img.flipv();
-                let _ = img_result.save_with_format(
-                    self.get_output_name(),
-                    ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                        .unwrap_or(ImageFormat::Jpeg),
-                );
-                println!("Flipped image saved as {:?}", self.get_output_name());
+                Args::flip_vertical(self)?;
             }
             Some(("monochrome_ugly", sub_matches)) => {
                 if let Some(t) = sub_matches.get_one::<f32>("threshold") {
                     self.set_threshold(Some(*t));
-                    let img_result = monochrome_ugly(
-                        &ImageReader::open(self.get_filepath().clone())?
-                            .decode()?
-                            .into_rgba8(),
-                        *t,
-                    );
-                    let _ = img_result.save_with_format(
-                        self.get_output_name(),
-                        ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                            .unwrap_or(ImageFormat::Jpeg),
-                    );
-                    println!("Monochrome image saved as {:?}", self.get_output_name());
+                    Args::monochrome_ugly(self)?;
                 }
             }
             Some(("grayscale", _sub_matches)) => {
-                let img_result = grayscale(
-                    &ImageReader::open(self.get_filepath().clone())?
-                        .decode()?
-                        .into_rgba8(),
-                );
-                let _ = img_result.save_with_format(
-                    self.get_output_name(),
-                    ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                        .unwrap_or(ImageFormat::Jpeg),
-                );
-                println!("Grayscale image saved as {:?}", self.get_output_name());
+                Args::grayscale(self)?;
             }
             Some(("ascii", sub_matches)) => {
-                let clusters = UnicodeSegmentation::graphemes(self.get_charset().as_str(), true)
-                    .collect::<Vec<_>>();
-                let charset = from_str(self.get_charset().as_str()).unwrap_or(clusters.as_slice());
-
-                let path = self.get_filepath().clone();
-
-                if sub_matches.get_flag("verbose_only") {
-                    render(
-                        path.to_str().unwrap(),
-                        &mut io::stdout(),
-                        &RenderOptions {
-                            width: self.get_width().or(Some(80)),
-                            height: self.get_height(),
-                            colored: self.is_colored(),
-                            invert: self.is_invert(),
-                            charset,
-                        },
-                    )?;
-                } else {
-                    render_to_file(
-                        path.to_str().unwrap(),
-                        self.get_output_name(),
-                        &RenderOptions {
-                            width: self.get_width().or(Some(80)),
-                            height: self.get_height(),
-                            colored: self.is_colored(),
-                            invert: self.is_invert(),
-                            charset,
-                        },
-                    )?;
-                }
+                let flag = sub_matches.get_flag("verbose_only");
+                Args::ascii(self, flag)?;
             }
             Some(("curse", _sub_matches)) => {
-                let img_result = curse(
-                    &ImageReader::open(self.get_filepath().clone())?
-                        .decode()?
-                        .into_rgba8(),
-                );
-                let _ = img_result.save_with_format(
-                    self.get_output_name(),
-                    ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                        .unwrap_or(ImageFormat::Jpeg),
-                );
-                println!("Cursed image saved as {:?}", self.get_output_name());
+                Args::curse(self)?;
             }
             Some(("zxc", _sub_matches)) => {
-                let img_result = zxc(&ImageReader::open(self.get_filepath().clone())?
-                    .decode()?
-                    .into_rgba8());
-                let _ = img_result.save_with_format(
-                    self.get_output_name(),
-                    ImageFormat::from_extension(self.get_output_ext().as_deref().unwrap())
-                        .unwrap_or(ImageFormat::Jpeg),
-                );
-                println!("ZXCursed image saved as {:?}", self.get_output_name());
+                Args::zxc(self)?;
             }
             _ => {
                 if !matches.get_flag("interactive") {

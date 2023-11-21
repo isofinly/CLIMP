@@ -37,7 +37,7 @@ impl Args {
         self.radius
     }
 
-    pub fn get_pixel(&self) -> Option<u32> {
+    pub fn get_pixel_size(&self) -> Option<u32> {
         self.pixel
     }
 
@@ -83,13 +83,13 @@ impl Args {
 
     pub fn get_output_ext(&self) -> Option<&String> {
         self.output_ext.as_ref()
-    }    
+    }
 
     pub fn set_filepath(&mut self, filepath: PathBuf) {
         self.filepath = filepath;
     }
 
-    pub fn set_radius(&mut self, radius: Option<u32>) {
+    pub fn set_blur_radius(&mut self, radius: Option<u32>) {
         self.radius = radius;
     }
 
@@ -140,5 +140,4 @@ impl Args {
     pub fn set_output_ext(&mut self, output_ext: Option<String>) {
         self.output_ext = output_ext;
     }
-
 }
