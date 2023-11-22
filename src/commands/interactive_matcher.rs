@@ -37,52 +37,52 @@ impl Args {
                 match command.get(..) {
                     Some("pixelate") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         handle_pixel_size(self);
                         Args::pixelate(self)?;
                         println!()
                     }
                     Some("blur") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         handle_blur_radius(self);
                         Args::blur(self)?;
                         println!()
                     }
                     Some("mirror") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         Args::mirror(self)?;
                         println!()
                     }
                     Some("flip_vertical") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         Args::flip_vertical(self)?;
                         println!()
                     }
                     Some("rotate") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         Args::rotate(self)?;
                         println!()
                     }
                     Some("grayscale") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         Args::grayscale(self)?;
                         println!()
                     }
                     Some("monochrome_ugly") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         handle_threshold(self);
                         Args::monochrome_ugly(self)?;
                         println!()
                     }
                     Some("scale") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         handle_scale_factor(self);
                         Args::resize(self)?;
                         println!()
@@ -90,8 +90,7 @@ impl Args {
                     Some("ascii") => {
                         handle_input_file(self)?;
                         self.set_file_ext(Some(String::from("txt")));
-                        handle_output_file(self)?;
-
+                        handle_output_file(self);
 
                         let flag = Select::with_theme(&ColorfulTheme::default())
                             .with_prompt("Render only in console or in file?")
@@ -107,13 +106,13 @@ impl Args {
                     }
                     Some("curse") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         Args::curse(self)?;
                         println!()
                     }
                     Some("zxc") => {
                         handle_input_file(self)?;
-                        handle_output_file(self)?;
+                        handle_output_file(self);
                         Args::zxc(self)?;
                         println!()
                     }
@@ -138,7 +137,13 @@ fn handle_input_file(args: &mut Args) -> Result<(), Box<dyn Error>> {
 
     set_input_filepath(path.into(), args);
 
-    set_input_extension(args)?;
+    match set_input_extension(args) {
+        Ok(_) => {}
+        Err(e) => {
+            println!("{}", e);
+            process::exit(1);
+        }
+    }
 
     Ok(())
 }
@@ -147,10 +152,12 @@ fn set_input_filepath(path: PathBuf, args: &mut Args) {
     args.set_filepath(PathBuf::from(path));
 }
 
-fn set_input_extension(args: &mut Args) -> Result<(), Box<dyn Error>>  {
+fn set_input_extension(args: &mut Args) -> Result<(), Box<dyn Error>> {
     let path = args.get_filepath();
-    if  path.extension().is_none() {
-        return Err("Output file must have an extension".into());
+    if path.extension().is_none() {
+        return Err(
+            "Output file must have an extension\nProgram is not supposed to read raw bytes".into(),
+        );
     }
     let extension = path
         .extension()
@@ -162,7 +169,7 @@ fn set_input_extension(args: &mut Args) -> Result<(), Box<dyn Error>>  {
     Ok(())
 }
 
-fn handle_output_file(args: &mut Args) -> Result<(), Box<dyn Error>> {
+fn handle_output_file(args: &mut Args) {
     let path: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Path to output image")
         .default(
@@ -180,9 +187,16 @@ fn handle_output_file(args: &mut Args) -> Result<(), Box<dyn Error>> {
 
     set_output_filepath(path.into(), args);
 
-    set_output_extension(args)?;
-
-    Ok(())
+    match set_output_extension(args) {
+        Ok(_) => {}
+        Err(e) => {
+            println!("{}\nDefault extension (.jpg) will be used", e);
+            args.set_output_name(PathBuf::from(
+                args.get_output_name().clone().to_str().unwrap().to_string() + ".jpg",
+            ));
+            args.set_output_ext(Some("jpg".to_string()));
+        }
+    };
 }
 
 fn set_output_filepath(path: PathBuf, args: &mut Args) {
@@ -191,7 +205,7 @@ fn set_output_filepath(path: PathBuf, args: &mut Args) {
 
 fn set_output_extension(args: &mut Args) -> Result<(), Box<dyn Error>> {
     let path = args.get_output_name();
-    if  path.extension().is_none() {
+    if path.extension().is_none() {
         return Err("Output file must have an extension".into());
     }
     let extension = path
